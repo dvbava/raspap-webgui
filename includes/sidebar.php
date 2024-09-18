@@ -10,15 +10,15 @@
             <img src="app/img/raspAP-logo.php" class="navbar-logo" width="64" height="64">
           </div>
           <div class="col-xs ml-2">
-            <div class="ml-1">Status</div>
+            <div class="ml-1 sb-status">Status</div>
             <div class="info-item-xs"><span class="icon">
               <i class="fas fa-circle <?php echo ($hostapd_led); ?>"></i></span> <?php echo _("Hotspot").' '. _($hostapd_status); ?>
             </div>
             <div class="info-item-xs"><span class="icon">
-              <i class="fas fa-circle <?php echo ($memused_led); ?>"></i></span> <?php echo _("Memory Use").': '. htmlspecialchars(strval($memused), ENT_QUOTES); ?>%
+              <i class="fas fa-circle <?php echo ($memused_led); ?>"></i></span> <?php echo _("Mem Use").': '. htmlspecialchars(strval($memused), ENT_QUOTES); ?>%
             </div>
             <div class="info-item-xs"><span class="icon">
-              <i class="fas fa-circle <?php echo ($cputemp_led); ?>"></i></span> <?php echo _("CPU Temp").': '. htmlspecialchars($cputemp, ENT_QUOTES); ?>°C
+              <i class="fas fa-circle <?php echo ($cputemp_led); ?>"></i></span> <?php echo _("CPU").': '. htmlspecialchars($cputemp, ENT_QUOTES); ?>°C
             </div>
           </div>
         </div>
@@ -57,7 +57,12 @@
         <?php endif; ?>
         <?php if (RASPI_WIREGUARD_ENABLED) : ?>
         <li class="nav-item">
-          <a class="nav-link" href="wg_conf"><span class="ra-wireguard mr-2"></span><span class="nav-label"><?php echo _("WireGuard"); ?></a>
+          <a class="nav-link" href="wg_conf"><i class="ra-wireguard mr-2"></i><span class="nav-label"><?php echo _("WireGuard"); ?></a>
+        </li>
+        <?php endif; ?>
+        <?php if (RASPI_VPN_PROVIDER_ENABLED) : ?>
+        <li class="nav-item">
+          <a class="nav-link" href="provider_conf"><i class="fas fa-shield-alt fa-fw mr-2"></i><span class="nav-label"><?php echo _(getProviderValue($_SESSION["providerID"], "name")); ?></a>
         </li>
         <?php endif; ?>
         <?php if (RASPI_TORPROXY_ENABLED) : ?>
@@ -75,12 +80,17 @@
           <a class="nav-link" href="data_use"><i class="fas fa-chart-bar fa-fw mr-2"></i><span class="nav-label"><?php echo _("Data usage"); ?></a>
         </li>
         <?php endif; ?>
+        <?php if (RASPI_RESTAPI_ENABLED) : ?>
+        <li class="nav-item">
+          <a class="nav-link" href="restapi_conf"><i class="fas fa-puzzle-piece mr-2"></i><span class="nav-label"><?php echo _("RestAPI"); ?></a>
+        </li>
+        <?php endif; ?>
         <?php if (RASPI_SYSTEM_ENABLED) : ?>
         <li class="nav-item">
           <a class="nav-link" href="system_info"><i class="fas fa-cube fa-fw mr-2"></i><span class="nav-label"><?php echo _("System"); ?></a>
         </li>
         <?php endif; ?>
-         <li class="nav-item">
+        <li class="nav-item">
           <a class="nav-link" href="about"><i class="fas fa-info-circle fa-fw mr-2"></i><span class="nav-label"><?php echo _("About RaspAP"); ?></a>
         </li>
         <!-- Divider -->

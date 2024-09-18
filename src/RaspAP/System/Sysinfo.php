@@ -83,7 +83,7 @@ class Sysinfo
 
     public function operatingSystem()
     {
-        $os_desc = shell_exec("lsb_release -sd");
+        $os_desc = shell_exec("cat /etc/os-release | awk -F= '/^PRETTY_NAME/ {print $2}' | sed 's/\"//g'");
         return $os_desc;
     }
 
@@ -130,7 +130,13 @@ class Sysinfo
         'a02100' => 'Compute Module 3+',
         'a03111' => 'Model 4B Revision 1.1 (1 GB)',
         'b03111' => 'Model 4B Revision 1.1 (2 GB)',
-        'c03111' => 'Model 4B Revision 1.1 (4 GB)'
+        'c03111' => 'Model 4B Revision 1.1 (4 GB)',
+        'a03140' => 'Compute Module 4 (1 GB)',
+        'b03140' => 'Compute Module 4 (2 GB)',
+        'c03140' => 'Compute Module 4 (4 GB)',
+        'd03140' => 'Compute Module 4 (8 GB)',
+        'c04170' => 'Pi 5 (4 GB)',
+        'd04170' => 'Pi 5 (8 GB)'
         );
 
         $cpuinfo_array = '';

@@ -84,7 +84,7 @@ function DisplayAdBlockConfig()
     $handle = fopen(RASPI_DHCPCD_LOG, "r");
     if ($handle) {
         while (($line = fgets($handle)) !== false) {
-            if (preg_match('/(0.0.0.0)/', $line)) {
+            if (preg_match('/(is 0.0.0.0)|(using only locally-known addresses)/', $line)) {
                 $adblock_log .= $line;
             }
         }
@@ -92,6 +92,7 @@ function DisplayAdBlockConfig()
     } else {
         $adblock_log = "Unable to open log file";
     }
+    $logdata = getLogLimited(RASPI_DHCPCD_LOG, $adblock_log);
 
     echo renderTemplate(
         "adblock", compact(
@@ -101,7 +102,7 @@ function DisplayAdBlockConfig()
         "enabled",
         "custom_enabled",
         "adblock_custom_content",
-        "adblock_log"
+        "logdata"
         )
     );
 }

@@ -1,3 +1,9 @@
+<?php header("Content-Type: text/css; charset=utf-8"); ?>
+<?php
+require_once '../../includes/functions.php';
+$color = getColorOpt();
+?>
+
 /*
 Theme Name: Lights Out
 Author: @billz
@@ -5,6 +11,13 @@ Author URI: https://github.com/billz
 Description: A dark mode theme for RaspAP
 License: GNU General Public License v3.0
 */
+
+<?php
+// Base color
+$baseColor = $color;
+$textColor = lightenColor($baseColor, 95);
+$secondaryColor = lightenColor($baseColor, 30);
+?>
 
 @import url('all.css');
 
@@ -17,25 +30,21 @@ h2 {
   font-size: 2rem !important;
 }
 
-h4 {
-  font-size: 1.3rem;
-}
-
-h5.card-title {
-  font-size: 1.2rem;
-}
-
 .page-header {
   border-left: .01rem solid #d2d2d2;
   border-bottom: .01rem solid #d2d2d2;
 }
 
 .sidebar-light .nav-item.active .nav-link i {
-  color: #d2d2d2;
+  color: <?php echo $secondaryColor; ?>;
 }
 
 .sidebar .nav-item.active .nav-link {
   font-weight: 400;
+}
+
+.sidebar-brand-text {
+  color: <?php echo $color; ?>;
 }
 
 #wrapper #content-wrapper #content {
@@ -52,6 +61,10 @@ h5.card-title {
 .nav-tabs .nav-link.active,
 .nav-tabs .nav-link {
   font-size: 1.0rem;
+}
+
+.nav-link.active {
+    font-weight: bolder;
 }
 
 .nav-tabs .nav-link:hover {
@@ -106,8 +119,8 @@ a:focus, a:hover {
   border-color: #404040;
   background-color: #202020;
   color: #afafaf;
-  border-top-right-radius: 3px;
-  border-top-left-radius: 3px;
+  border-top-right-radius: 0.35rem;
+  border-top-left-radius: 0.35rem;
   font-size: 1.0rem;
   font-weight: 400;
 }
@@ -131,16 +144,12 @@ a:focus, a:hover {
 
 .card, .card-body {
   border-color: #343434;
-  border-radius: 3px;
+  border-radius: 0.35rem;
   background-color: #141414;
 }
 
 hr { 
   border-top: .01rem solid #d2d2d2;
-}
-
-.sidebar-brand-text {
-  color: #2b8080 !important;
 }
 
 .ra-raspap:before {
@@ -201,7 +210,7 @@ hr {
 }
 
 .sidebar-light .nav-item .nav-link i {
-  color: rgba(230, 230, 230, .3);
+color: <?php echo $color; ?>
 }
 
 .sidebar .nav-item .nav-link {
@@ -248,7 +257,7 @@ span.label.label-warning {
 [class*="btn"], [class*="btn"]:focus, [class*="btn"]:disabled {
   background-color: #202020;
   border-color: #404040;
-  border-radius: 3px;
+  border-radius: 0.35rem;
   color: #d2d2d2;
 }
 
@@ -319,16 +328,16 @@ color: #d2d2d2 !important
   filter: opacity(0.7);
 }
 
-.ra-wireguard:before {
-  color: #404040 !important;
-}
-
 .ra-wireguard:hover:before {
   color: #d1d3e2 !important;
 }
 
-.sidebar .nav-item.active .nav-link span.ra-wireguard:before {
-    color: #d2d2d2 !important;
+.sidebar-light .nav-link span.ra-wireguard:before {
+    color: <?php echo $color; ?>!important;
+}
+
+.sidebar-light .nav-item.active .nav-link span.ra-wireguard:before {
+  color: <?php echo $textColor; ?>;
 }
 
 .logoutput {
@@ -353,6 +362,11 @@ button.btn.btn-light.js-toggle-password {
   border: 1px solid #343434;
 }
 
+.btn-light {
+  border-color: #343434;
+  border-radius: 0.35rem;
+  background-color: #141414;
+}
 
 .signal-icon .signal-bar {
   background: #2b8080;

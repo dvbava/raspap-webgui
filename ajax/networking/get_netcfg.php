@@ -2,8 +2,10 @@
 
 require '../../includes/csrf.php';
 require_once '../../includes/config.php';
+require_once '../../src/RaspAP/Auth/HTTPAuth.php';
+require_once '../../includes/authenticate.php';
 
-$interface = $_GET['iface'];
+$interface = $_POST['iface'];
 
 if (isset($interface)) {
     // fetch dnsmasq.conf settings for interface
@@ -11,7 +13,11 @@ if (isset($interface)) {
     $conf = ParseConfig($return);
 
     $dhcpdata['DHCPEnabled'] = empty($conf) ? false : true;
-    $arrRange = explode(",", $conf['dhcp-range']);
+    if (is_string($conf['dhcp-range'])) {
+        $arrRange = explode(",", $conf['dhcp-range']);
+    } else {
+        $arrRange = explode(",", $conf['dhcp-range'][0]);
+    }
     $dhcpdata['RangeStart'] = $arrRange[0];
     $dhcpdata['RangeEnd'] = $arrRange[1];
     $dhcpdata['RangeMask'] = $arrRange[2];
@@ -55,6 +61,5 @@ if (isset($interface)) {
     $dhcpdata['FallbackEnabled'] = empty($fallback) ? false: true;
     $dhcpdata['DefaultRoute'] = $gateway[0] == "gateway";
     $dhcpdata['NoHookWPASupplicant'] = $nohook_wpa_supplicant[0] == "nohook wpa_supplicant";
-
     echo json_encode($dhcpdata);
 }

@@ -27,6 +27,9 @@
         case "/wg_conf":
             DisplayWireGuardConfig();
             break;
+        case "/provider_conf":
+            DisplayProviderConfig();
+            break;
         case "/torproxy_conf":
             DisplayTorProxyConfig();
             break;
@@ -41,6 +44,9 @@
             break;
         case "/system_info":
             DisplaySystem($extraFooterScripts);
+            break;
+        case "/restapi_conf":
+            DisplayRestAPI();
             break;
         case "/about":
             DisplayAbout();

@@ -30,10 +30,10 @@
 
       <div class="row dhcp-static-lease-row js-new-dhcp-static-lease">
         <div class="col-md-4 col-xs-3">
-          <input type="text" name="mac" value="" placeholder="<?php echo _("MAC address") ?>" class="form-control" autofocus="autofocus">
+          <input type="text" name="mac" value="" placeholder="<?php echo _("MAC address") ?>" class="form-control date" autofocus="autofocus">
         </div>
         <div class="col-md-3 col-xs-3">
-          <input type="text" name="ip" value="" placeholder="<?php echo _("IP address") ?>" class="form-control">
+          <input type="text" name="ip" value="" placeholder="<?php echo _("IP address") ?>" class="form-control ip_address" maxlength="15">
         </div>
         <div class="col-md-3 col-xs-3">
           <input type="text" name="comment" value="" placeholder="<?php echo _("Optional comment") ?>" class="form-control">

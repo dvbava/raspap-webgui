@@ -169,6 +169,24 @@ function getDefaultNetOpts($svc,$key)
     }
 }
 
+/**
+ * Returns a value for the specified VPN provider
+ *
+ * @param numeric $id
+ * @param string $key
+ * @return object $json
+ */
+function getProviderValue($id,$key)
+{
+    $obj = json_decode(file_get_contents(RASPI_CONFIG_PROVIDERS), true);
+    if ($obj === null) {
+        return false;
+    } else {
+        $id--;
+        return $obj['providers'][$id][$key];
+    }
+}
+
 /* Functions to write ini files */
 
 /**
@@ -417,17 +435,25 @@ function GetDistString($input, $string, $offset, $separator)
 }
 
 /**
- *
- * @param  array $arrConfig
+ * Parses a configuration file
+ * Options and values are mapped with "=" characters
+ * Optional $wg flag is used for parsing WireGuard .conf files
+ * @param  array   $arrConfig
+ * @param  boolean $wg
  * @return $config
  */
-function ParseConfig($arrConfig)
+function ParseConfig($arrConfig, $wg = false)
 {
     $config = array();
     foreach ($arrConfig as $line) {
         $line = trim($line);
         if ($line == "" || $line[0] == "#") {
-            continue;
+            if ($wg) {
+                $config[$option] = null;
+                continue;
+            } else {
+                continue;
+            }
         }
 
         if (strpos($line, "=") !== false) {
@@ -669,6 +695,7 @@ function initializeApp()
     $_SESSION["theme_url"] = getThemeOpt();
     $_SESSION["toggleState"] = getSidebarState();
     $_SESSION["bridgedEnabled"] = getBridgedState();
+    $_SESSION["providerID"] = getProviderID();
 }
 
 function getThemeOpt()
@@ -688,10 +715,10 @@ function getColorOpt()
         $color = "#2b8080";
     } else {
         $color = $_COOKIE['color'];
-        setcookie('color', $color);
     }
     return $color;
 }
+
 function getSidebarState()
 {
     if(isset($_COOKIE['sidebarToggled'])) {
@@ -707,6 +734,17 @@ function getBridgedState()
     $arrHostapdConf = parse_ini_file(RASPI_CONFIG.'/hostapd.ini');
     // defaults to false
     return  $arrHostapdConf['BridgedEnable'];
+}
+
+// Returns VPN provider ID, if defined
+function getProviderID()
+{
+    if (RASPI_VPN_PROVIDER_ENABLED) {
+        $arrProvider = parse_ini_file(RASPI_CONFIG.'/provider.ini');
+        if (isset($arrProvider['providerID'])) {
+            return $arrProvider['providerID'];
+        }
+    }
 }
 
 /**
@@ -742,11 +780,28 @@ function validate_host($host)
   return preg_match('/^([a-z\d](-*[a-z\d])*)(\.([a-z\d](-*[a-z\d])*))*$/i', $host);
 }
 
+/**
+ * Validates a MAC address
+ *
+ * @param string $mac
+ * @return bool
+ */
+function validateMac($mac) {
+    $macAddress = strtoupper(preg_replace('/[^a-fA-F0-9]/', '', $mac));
+    if (strlen($macAddress) !== 12) {
+        return false;
+    }
+    if (!ctype_xdigit($macAddress)) {
+        return false;
+    }
+    return true;
+}
+
 // Gets night mode toggle value
 // @return boolean
 function getNightmode()
 {
-    if (isset($_COOKIE['theme']) && $_COOKIE['theme'] == 'lightsout.css') {
+    if (isset($_COOKIE['theme']) && $_COOKIE['theme'] == 'lightsout.php') {
         return true;
     } else {
         return false;
@@ -831,3 +886,123 @@ function loadFooterScripts($extraFooterScripts)
     }
 }
 
+/**
+ * Returns ISO standard 2-letter country codes
+ *
+ * @param string $locale
+ * @param boolean $flag
+ * @see   https://salsa.debian.org/debian/isoquery/
+*/
+function getCountryCodes($locale = 'en', $flag = true) {
+    define("FLAG_SUPPORT", "3.3.0");
+    $output = [];
+    $version = shell_exec("isoquery --version | grep -oP '(?<=isoquery )\d+\.\d+\.\d+'");
+    $compat = checkReleaseVersion(FLAG_SUPPORT, $version);
+
+    if ($flag && $compat) {
+        $opt = '--flag';
+    }
+    exec("isoquery $opt --locale $locale | awk -F'\t' '{print $5 \"\t\" $0}' | sort | cut -f2-", $output);
+
+    $countryData = [];
+    foreach ($output as $line) {
+        $parts = explode("\t", $line);
+        if (count($parts) >= 2) {
+            $countryCode = $parts[0];
+            if ($flag) {
+                $countryFlag = $parts[3];
+                $countryName = $parts[4] .' ';
+            } else {
+                $countryName = $parts[3];
+            }
+            $countryData[$countryCode] = $countryName.$countryFlag;
+        }
+    }
+    return $countryData;
+}
+
+/**
+ * Compares the current release with the latest available release
+ *
+ * @param string $installed
+ * @param string $latest
+ * @return boolean
+ */
+function checkReleaseVersion($installed, $latest) {
+    $installedArray = explode('.', $installed);
+    $latestArray = explode('.', $latest);
+
+    // compare segments of the version number
+    for ($i = 0; $i < max(count($installedArray), count($latestArray)); $i++) {
+        $installedSegment = (int)($installedArray[$i] ?? 0);
+        $latestSegment = (int)($latestArray[$i] ?? 0);
+
+        if ($installedSegment < $latestSegment) {
+            return true;
+        } elseif ($installedSegment > $latestSegment) {
+            return false;
+        }
+    }
+    return false;
+}
+
+ /**
+ * Returns logfile contents up to a maximum defined limit, in kilobytes
+ *
+ * @param string $file_path
+ * @param string $file_data optional
+ * @return string $log_limited
+ */
+function getLogLimited($file_path, $file_data = null) {
+    $limit_in_kb = isset($_SESSION['log_limit']) ? $_SESSION['log_limit'] : RASPI_LOG_SIZE_LIMIT;
+    $limit = $limit_in_kb * 1024; // convert KB to bytes
+
+    if ($file_data === null) {
+        $file_size = filesize($file_path);
+        $start_position = max(0, $file_size - $limit);
+        $log_limited = file_get_contents($file_path, false, null, $start_position);
+    } else {
+        $file_size = strlen($file_data);
+        $start_position = max(0, $file_size - $limit);
+        $log_limited = substr($file_data, $start_position);
+    }
+    return $log_limited;
+ }
+
+/**
+ * Function to darken a color by a percentage
+ * From @marek-guran's material-dark theme for RaspAP
+ * Author URI: https://github.com/marek-guran
+ */
+function darkenColor($color, $percent)
+{
+    $percent /= 100;
+    $r = hexdec(substr($color, 1, 2));
+    $g = hexdec(substr($color, 3, 2));
+    $b = hexdec(substr($color, 5, 2));
+
+    $r = round($r * (1 - $percent));
+    $g = round($g * (1 - $percent));
+    $b = round($b * (1 - $percent));
+
+    return sprintf("#%02x%02x%02x", $r, $g, $b);
+}
+
+/**
+ * Function to lighten a color by a percentage
+ * From @marek-guran's material-dark theme for RaspAP
+ * Author URI: https://github.com/marek-guran
+ */
+function lightenColor($color, $percent)
+{
+    $percent /= 100;
+    $r = hexdec(substr($color, 1, 2));
+    $g = hexdec(substr($color, 3, 2));
+    $b = hexdec(substr($color, 5, 2));
+
+    $r = round($r + (255 - $r) * $percent);
+    $g = round($g + (255 - $g) * $percent);
+    $b = round($b + (255 - $b) * $percent);
+
+    return sprintf("#%02x%02x%02x", $r, $g, $b);
+}

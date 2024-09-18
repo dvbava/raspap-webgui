@@ -1,17 +1,18 @@
 ![](https://i.imgur.com/xeKD93p.png)
-[![Release 2.9.4](https://img.shields.io/badge/release-v2.9.4-green)](https://github.com/raspap/raspap-webgui/releases) [![Awesome](https://awesome.re/badge.svg)](https://github.com/thibmaek/awesome-raspberry-pi) [![Join Insiders](https://img.shields.io/static/v1?label=Join%20Insiders&message=%E2%9D%A4&logo=GitHub&color=ff69b4)](https://github.com/sponsors/RaspAP) [![Build Status](https://app.travis-ci.com/RaspAP/raspap-webgui.svg?branch=master)](https://app.travis-ci.com/RaspAP/raspap-webgui) [![Crowdin](https://badges.crowdin.net/raspap/localized.svg)](https://crowdin.com/project/raspap) [![Twitter URL](https://img.shields.io/twitter/url?label=%40RaspAP&logoColor=%23d8224c&url=https%3A%2F%2Ftwitter.com%2Frasp_ap)](https://twitter.com/rasp_ap) [![Subreddit subscribers](https://img.shields.io/reddit/subreddit-subscribers/RaspAP?style=social)](https://www.reddit.com/r/RaspAP/) [![Join the chat at https://app.gitter.im/#/room/#RaspAP:gitter.im](https://img.shields.io/badge/chat-on%20gitter-brightgreen)](https://app.gitter.im/#/room/#RaspAP:gitter.im)
+[![Release 3.1.7](https://img.shields.io/badge/release-v3.1.7-green)](https://github.com/raspap/raspap-webgui/releases) [![Awesome](https://awesome.re/badge.svg)](https://github.com/thibmaek/awesome-raspberry-pi) [![Join Insiders](https://img.shields.io/static/v1?label=Join%20Insiders&message=%E2%9D%A4&logo=GitHub&color=ff69b4)](https://github.com/sponsors/RaspAP) [![Build Status](https://app.travis-ci.com/RaspAP/raspap-webgui.svg?branch=master)](https://app.travis-ci.com/RaspAP/raspap-webgui) [![Crowdin](https://badges.crowdin.net/raspap/localized.svg)](https://crowdin.com/project/raspap) [![Twitter URL](https://img.shields.io/twitter/url?label=%40RaspAP&logoColor=%23d8224c&url=https%3A%2F%2Ftwitter.com%2Frasp_ap)](https://twitter.com/rasp_ap) [![Reddit](https://img.shields.io/badge/%2Fr%2FRaspAP-e05d44?style=flat&logo=Reddit&logoColor=white&labelColor=e05d44&color=b14835)](https://reddit.com/r/RaspAP) [![Discord](https://img.shields.io/discord/642436993451819018?color=7289DA&label=Discord&logo=discord&style=flat)](https://discord.gg/KVAsaAR)
 
-RaspAP is feature-rich wireless router software that _just works_ on many popular [Debian-based devices](#supported-operating-systems), including the Raspberry Pi. Our popular [Quick installer](#quick-installer) creates a known-good default configuration for all current Raspberry Pis with onboard wireless. A fully responsive, mobile-ready interface gives you control over the relevant services and networking options. Advanced DHCP settings, WireGuard and OpenVPN support, [SSL certificates](https://docs.raspap.com/ssl-quick/), security audits, [captive portal integration](https://docs.raspap.com/captive/), themes and [multilingual options](https://docs.raspap.com/translations/) are included.
+
+RaspAP is feature-rich wireless router software that _just works_ on many popular [Debian-based devices](#supported-operating-systems), including the Raspberry Pi. Our popular [Quick installer](#quick-installer) and [Docker container](#docker-support) create a known-good default configuration for all current Raspberry Pis with onboard wireless. A fully responsive, mobile-ready interface gives you control over the relevant services and networking options. Advanced DHCP settings, WireGuard and OpenVPN support, [SSL certificates](https://docs.raspap.com/ssl-quick/), security audits, [captive portal integration](https://docs.raspap.com/captive/), themes and [multilingual options](https://docs.raspap.com/translations/) are included.
 
 RaspAP has been featured on sites such as [Instructables](http://www.instructables.com/id/Raspberry-Pi-As-Completely-Wireless-Router/), [Adafruit](https://blog.adafruit.com/2016/06/24/raspap-wifi-configuration-portal-piday-raspberrypi-raspberry_pi/), [Raspberry Pi Weekly](https://www.raspberrypi.org/weekly/commander/) and [Awesome Raspberry Pi](https://project-awesome.org/thibmaek/awesome-raspberry-pi) and implemented in countless projects.
 
 We hope you enjoy using RaspAP as much as we do creating it. Tell us how you use this with [your own projects](https://github.com/raspap/raspap-awesome).
 
-![](https://i.imgur.com/uhBFoOB.png)
-![](https://i.imgur.com/EiIpdOS.gif)
-![](https://i.imgur.com/eCjUS1H.gif)
-![](https://i.imgur.com/5FT2BcS.gif)
-![](https://i.imgur.com/RKaBFrZ.gif)
+![](https://github.com/RaspAP/raspap-webgui/assets/229399/3df0d9c2-3c22-46f9-b5ac-8a5ea1626cb6)
+![](https://github.com/RaspAP/raspap-webgui/assets/229399/e8a246d7-08ba-4a14-9df2-7743bfe1c7a2)
+![](https://github.com/RaspAP/raspap-webgui/assets/229399/5f50d8db-265c-475b-ad53-af4491189e1a)
+![](https://github.com/RaspAP/raspap-webgui/assets/229399/0035e542-5457-4576-aee4-6240764846f2)
+![](https://github.com/RaspAP/raspap-webgui/assets/229399/8f99d89c-d996-460a-bf93-96f33a5eddb3)
 ## Contents
 
  - [Prerequisites](#prerequisites)
@@ -19,14 +20,16 @@ We hope you enjoy using RaspAP as much as we do creating it. Tell us how you use
  - [Join Insiders](#join-insiders)
  - [WireGuard support](#wireguard-support)
  - [OpenVPN support](#openvpn-support)
+ - [VPN Provider support](#vpn-provider-support)
  - [Ad Blocking](#ad-blocking)
  - [Bridged AP](#bridged-ap)
  - [Simultaneous AP and Wifi client](#simultaneous-ap-and-wifi-client)
  - [Manual installation](#manual-installation)
  - [802.11ac 5GHz support](#80211ac-5ghz-support)
  - [Supported operating systems](#supported-operating-systems)
- - [Multilingual support](#multilingual-support)
  - [HTTPS support](#https-support)
+ - [Docker support](#docker-support)
+ - [Multilingual support](#multilingual-support)
  - [How to contribute](#how-to-contribute)
  - [Reporting issues](#reporting-issues)
  - [License](#license)
@@ -93,6 +96,11 @@ To configure an OpenVPN client, upload a valid .ovpn file and, optionally, speci
 
 See our [OpenVPN documentation](https://docs.raspap.com/openvpn/) for more information.
 
+## VPN provider support
+
+Several popular VPN providers include a Linux Command Line Interface (CLI) for interacting with their services. As a new beta feature, you may optionally control these VPN services from within RaspAP. After your provider's CLI is installed on your system you may administer it thereafter by using RaspAP's UI.
+
+See our [VPN provider documentation](https://docs.raspap.com/providers/) for more information.
 
 ## Ad Blocking
 This feature uses DNS blacklisting to block requests for ads, trackers and other undesirable hosts. To enable ad blocking, simply respond to the prompt during the installation. As a beta release, we encourage testing and feedback from users of RaspAP.
@@ -115,27 +123,24 @@ RaspAP lets you create an AP with a Wifi client configuration, often called [AP-
 Detailed manual setup instructions are provided [on our documentation site](https://docs.raspap.com/manual/).
 
 ## 802.11ac 5GHz support
-RaspAP provides an 802.11ac wireless mode option for supported hardware (currently the RPi 3B+/4 and compatible Orange Pi models) and wireless regulatory domains. See [this FAQ](https://docs.raspap.com/faq/#80211ac) for more information. 
+RaspAP provides an 802.11ac wireless mode option for supported hardware (currently the RPi 3B+/4 and compatible Orange Pi models) and wireless regulatory domains. See [this](https://docs.raspap.com/ap-basics/#80211ac-5-ghz) for more information.
 
 ## Supported operating systems
 RaspAP was originally made for Raspbian, but now also installs on the following Debian-based distros.
 
 | Distribution | Release  | Architecture | Support |
 |---|:---:|:---:|:---:|
-| Raspberry Pi OS | (32-bit) Lite Bullseye | ARM | Official |
+| Raspberry Pi OS | (64-bit) Lite Bookworm	| ARM | Official |
+| Raspberry Pi OS | (32-bit) Lite Bookworm | ARM | Official |
 | Raspberry Pi OS | (64-bit) Lite Bullseye | ARM | Official |
-| Armbian | Bullseye | [ARM](https://docs.armbian.com/#supported-socs) | Official |
-| Debian  |  Bullseye | ARM / x86_64  | Beta |
-| Ubuntu  |  18.04 LTS / 19.10 | ARM / x86_64  | Beta |
+| Raspberry Pi OS | (32-bit) Lite Bullseye | ARM | Official |
+| Armbian | 23.11 (Jammy) | [ARM](https://docs.armbian.com/#supported-socs) | Official |
+| Debian  |  Bookworm | ARM / x86_64  | Beta |
+| Ubuntu  |  Server 23.04 (Lunar) | ARM / x86_64  | Beta |
 
-![](https://i.imgur.com/luiyYNw.png)
+<img src="https://github.com/RaspAP/raspap-webgui/assets/229399/6fe62f2d-631a-46c9-8ceb-83ebf0ade6a9" style="width:640px;" />
 
-We find Armbian particularly well-suited for this project. Please note that "supported" is not a guarantee. If you are able to improve support for your preferred distro, we encourage you to [actively contribute](#how-to-contribute) to the project.
-
-## Multilingual support
-RaspAP uses [GNU Gettext](https://www.gnu.org/software/gettext/) to manage multilingual messages. In order to use RaspAP with one of our supported translations, you must configure a corresponding language package on your RPi. To list languages currently installed on your system, use `locale -a` at the shell prompt. To generate new locales, run `sudo dpkg-reconfigure locales` and select any other desired locales. Details are provided on our [documentation site](https://docs.raspap.com/translations/).
-
-See this list of [supported languages](https://docs.raspap.com/translations/#supported-languages) that are actively maintained by volunteer translators. If your language is not supported, why not [contribute a translation](https://docs.raspap.com/translations/#contributing-to-a-translation)? Contributors will receive credit as the original translators.
+You are also encouraged to use RaspAP's community-led [Docker container](#docker-support). Please note that "supported" is not a guarantee. If you are able to improve support for your preferred distro, we encourage you to [actively contribute](#how-to-contribute) to the project.
 
 ## HTTPS support
 The Quick Installer may be used to [generate SSL certificates](https://docs.raspap.com/ssl-quick/) with `mkcert`. The installer automates the manual steps [described here](https://docs.raspap.com/ssl-manual/), including configuring lighttpd with SSL support. 
@@ -148,7 +153,19 @@ curl -sL https://install.raspap.com | bash -s -- --cert
 
 **Note**: this only installs mkcert and generates an SSL certificate with the input you provide. It does *not* (re)install RaspAP.
 
-More information on SSL certificates and HTTPS support is available [in our documentation](https://docs.raspap.com/ssl-quick/). 
+More information on SSL certificates and HTTPS support is available [in our documentation](https://docs.raspap.com/ssl/). 
+
+## Docker support
+<img src="https://github.com/RaspAP/raspap-webgui/assets/229399/dc40dfc4-e9b8-405f-8ffb-6c5f88482b8e" width="450">
+
+As an alternative to the [Quick installer](#quick-installer), RaspAP may be run in an isolated, portable [Docker container](https://docs.raspap.com/docker/).
+
+See the [RaspAP-docker repo](https://github.com/RaspAP/raspap-docker/) for more information.
+
+## Multilingual support
+RaspAP uses [GNU Gettext](https://www.gnu.org/software/gettext/) to manage multilingual messages. In order to use RaspAP with one of our supported translations, you must configure a corresponding language package on your RPi. To list languages currently installed on your system, use `locale -a` at the shell prompt. To generate new locales, run `sudo dpkg-reconfigure locales` and select any other desired locales. Details are provided on our [documentation site](https://docs.raspap.com/translations/).
+
+See this list of [supported languages](https://docs.raspap.com/translations/#supported-languages) that are actively maintained by volunteer translators. If your language is not supported, why not [contribute a translation](https://docs.raspap.com/translations/#contributing-to-a-translation)? Contributors will receive credit as the original translators.
 
 ## How to contribute
 1. Fork the project in your account and create a new branch: `your-great-feature`.

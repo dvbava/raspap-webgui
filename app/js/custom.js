@@ -122,6 +122,10 @@ $(document).on("click", "#gen_wpa_passphrase", function(e) {
     $('#txtwpapassphrase').val(genPassword(63));
 });
 
+$(document).on("click", "#gen_apikey", function(e) {
+    $('#txtapikey').val(genPassword(32).toLowerCase());
+});
+
 $(document).on("click", "#js-clearhostapd-log", function(e) {
     var csrfToken = $('meta[name=csrf_token]').attr('content');
     $.post('ajax/logging/clearlog.php?',{'logfile':'/tmp/hostapd.log', 'csrf_token': csrfToken},function(data){
@@ -185,7 +189,7 @@ function contentLoaded() {
             setupBtns();
             break;
         case "hostapd_conf":
-            loadChannel();
+            getChannel();
             setHardwareModeTooltip();
             break;
         case "dhcpd_conf":
@@ -212,7 +216,8 @@ Option toggles are set dynamically depending on the loaded configuration
 */
 function loadInterfaceDHCPSelect() {
     var strInterface = $('#cbxdhcpiface').val();
-    $.get('ajax/networking/get_netcfg.php?iface='+strInterface,function(data){
+    var csrfToken = $('meta[name=csrf_token]').attr('content');
+    $.post('ajax/networking/get_netcfg.php', {'iface' : strInterface, 'csrf_token': csrfToken}, function(data){
         jsonData = JSON.parse(data);
         $('#dhcp-iface')[0].checked = jsonData.DHCPEnabled;
         $('#txtipaddress').val(jsonData.StaticIP);
@@ -241,6 +246,7 @@ function loadInterfaceDHCPSelect() {
             $('#chkstatic').closest('.btn').button('toggle').blur();
             $('#chkstatic').blur();
             $('#chkfallback').prop('disabled', true);
+            $('#dhcp-iface').removeAttr('disabled');
         } else {
             $('#chkdhcp').closest('.btn').button('toggle');
             $('#chkdhcp').closest('.btn').button('toggle').blur();
@@ -249,6 +255,7 @@ function loadInterfaceDHCPSelect() {
         }
         if (jsonData.FallbackEnabled || $('#chkdhcp').is(':checked')) {
             $('#dhcp-iface').prop('disabled', true);
+            setDhcpFieldsDisabled();
         }
     });
 }
@@ -259,30 +266,123 @@ function setDHCPToggles(state) {
     }
     if ($('#dhcp-iface').is(':checked') && !state) {
         $('#dhcp-iface').prop('checked', state);
+        setDhcpFieldsDisabled();
     }
-
     $('#chkfallback').prop('disabled', state);
     $('#dhcp-iface').prop('disabled', !state);
-    //$('#dhcp-iface').prop('checked', state);
 }
 
-function loadChannel() {
-    $.get('ajax/networking/get_channel.php',function(data){
-        jsonData = JSON.parse(data);
-        loadChannelSelect(jsonData);
+$('#debugModal').on('shown.bs.modal', function (e) {
+  var csrfToken = $('meta[name=csrf_token]').attr('content');
+  $.post('ajax/system/sys_debug.php',{'csrf_token': csrfToken},function(data){
+        window.location.replace('/ajax/system/sys_get_logfile.php');
+        $('#debugModal').modal('hide');
+    });
+});
+
+$('#chkupdateModal').on('shown.bs.modal', function (e) {
+  var csrfToken = $('meta[name=csrf_token]').attr('content');
+  $.post('ajax/system/sys_chk_update.php',{'csrf_token': csrfToken},function(data){
+        var response = JSON.parse(data);
+        var tag = response.tag;
+        var update = response.update;
+        var msg;
+        var msgUpdate = $('#msgUpdate').data('message');
+        var msgLatest = $('#msgLatest').data('message');
+        var msgInstall = $('#msgInstall').data('message');
+        var msgDismiss = $('#js-check-dismiss').data('message');
+        var faCheck = '<i class="fas fa-check ml-2"></i><br />';
+        $("#updateSync").removeClass("fa-spin");
+        if (update === true) {
+            msg = msgUpdate +' '+tag;
+            $("#msg-check-update").html(msg);
+            $("#msg-check-update").append(faCheck);
+            $("#msg-check-update").append("<p>"+msgInstall+"</p>");
+            $("#js-sys-check-update").removeClass("collapse");
+        } else {
+            msg = msgLatest;
+            dismiss = $("#js-check-dismiss");
+            $("#msg-check-update").html(msg);
+            $("#msg-check-update").append(faCheck);
+            $("#js-sys-check-update").remove();
+            dismiss.text(msgDismiss);
+            dismiss.removeClass("btn-outline-secondary");
+            dismiss.addClass("btn-primary");
+        }
+    });
+});
+
+$('#performUpdate').on('submit', function(event) {
+    event.preventDefault();
+    var csrfToken = $('meta[name=csrf_token]').attr('content');
+    $.post('ajax/system/sys_perform_update.php',{
+        'csrf_token': csrfToken
+    })
+    $('#chkupdateModal').modal('hide');
+    $('#performupdateModal').modal('show');
+});
+
+$('#performupdateModal').on('shown.bs.modal', function (e) {
+    fetchUpdateResponse();
+});
+
+function fetchUpdateResponse() {
+    const xhr = new XMLHttpRequest();
+    const complete = 6;
+    const error = 7;
+    let phpFile = 'ajax/system/sys_read_logfile.php';
+    $.ajax({
+        url: phpFile,
+        type: 'GET',
+        success: function(response) {
+            let endPolling = false;
+            for (let i = 1; i <= 6; i++) {
+                let divId = '#updateStep' + i;
+                if (response.includes(i.toString())) {
+                    $(divId).removeClass('invisible');
+                }
+                if (response.includes(complete)) {
+                    var successMsg = $('#successMsg').data('message');
+                    $('#updateMsg').after('<span class="small">' + successMsg + '</span>');
+                    $('#updateMsg').addClass('fa-check');
+                    $('#updateMsg').removeClass('invisible');
+                    $('#updateStep6').removeClass('invisible');
+                    $('#updateSync2').removeClass("fa-spin");
+                    $('#updateOk').removeAttr('disabled');
+                    endPolling = true;
+                    break;
+                } else if (response.includes(error)) {
+                    var errorMsg = $('#errorMsg').data('message');
+                    $('#updateMsg').after('<span class="small">' + errorMsg + '</span>');
+                    $('#updateMsg').addClass('fa-times');
+                    $('#updateMsg').removeClass('invisible');
+                    $('#updateSync2').removeClass("fa-spin");
+                    $('#updateOk').removeAttr('disabled');
+                    endPolling = true;
+                    break;
+                }
+            }
+            if (!endPolling) {
+                setTimeout(fetchUpdateResponse, 500);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error(error);
+        }
     });
 }
 
 $('#hostapdModal').on('shown.bs.modal', function (e) {
-    var seconds = 9;
+    var seconds = 3;
+    var pct = 0;
     var countDown = setInterval(function(){
       if(seconds <= 0){
         clearInterval(countDown);
       }
-      var pct = Math.floor(100-(seconds*100/9));
       document.getElementsByClassName('progress-bar').item(0).setAttribute('style','width:'+Number(pct)+'%');
       seconds --;
-    }, 1000);
+      pct = Math.floor(100-(seconds*100/4));
+    }, 500);
 });
 
 $('#configureClientModal').on('shown.bs.modal', function (e) {
@@ -354,8 +454,33 @@ $('#js-system-reset-confirm').on('click', function (e) {
     });
 });
 
+$('#js-sys-reboot, #js-sys-shutdown').on('click', function (e) {
+    e.preventDefault();
+    var csrfToken = $('meta[name=csrf_token]').attr('content');
+    var action = $(this).data('action');
+    $.post('ajax/system/sys_actions.php?',{'a': action, 'csrf_token': csrfToken},function(data){
+        var response = JSON.parse(data);
+    });
+});
+
 $(document).ready(function(){
-  $("#PanelManual").hide();
+    $("#PanelManual").hide();
+    $('.ip_address').mask('0ZZ.0ZZ.0ZZ.0ZZ', {
+        translation: {
+            'Z': {
+                pattern: /[0-9]/, optional: true
+            }
+        },
+        placeholder: "___.___.___.___"
+    });
+    $('.date').mask('FF:FF:FF:FF:FF:FF', {
+        translation: {
+            "F": {
+                pattern: /[0-9a-z]/, optional: true
+            }
+        },
+        placeholder: "__:__:__:__:__:__"
+    });
 });
 
 $('#wg-upload,#wg-manual').on('click', function (e) {
@@ -374,53 +499,76 @@ $(".custom-file-input").on("change", function() {
   $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
 });
 
-/*
-Sets the wirelss channel select options based on hw_mode and country_code.
-
-Methodology: In North America up to channel 11 is the maximum allowed WiFi 2.4Ghz channel,
-except for the US that allows channel 12 & 13 in low power mode with additional restrictions.
-Canada allows channel 12 in low power mode. Because it's unsure if low powered mode can be
-supported the channels are not selectable for those countries. Also Uzbekistan and Colombia
-allow up to channel 11 as maximum channel on the 2.4Ghz WiFi band.
-Source: https://en.wikipedia.org/wiki/List_of_WLAN_channels
-Additional: https://git.kernel.org/pub/scm/linux/kernel/git/sforshee/wireless-regdb.git
-*/
-function loadChannelSelect(selected) {
-    // Fetch wireless regulatory data
-    $.getJSON("config/wireless.json", function(json) {
-        var hw_mode = $('#cbxhwmode').val();
-        var country_code = $('#cbxcountries').val();
-        var channel_select = $('#cbxchannel');
-        var data = json["wireless_regdb"];
-        var selectablechannels = Array.range(1,14);
-
-        // Assign array of countries to valid frequencies (channels)
-        var countries_2_4Ghz_max11ch = data["2_4GHz_max11ch"].countries;
-        var countries_2_4Ghz_max14ch = data["2_4GHz_max14ch"].countries;
-        var countries_5Ghz_max48ch = data["5Ghz_max48ch"].countries;
-
-        // Map selected hw_mode and country to determine channel list
-        if (hw_mode === 'a') {
-            selectablechannels = data["5Ghz_max48ch"].channels;
-        } else if (($.inArray(country_code, countries_2_4Ghz_max11ch) !== -1) && (hw_mode !== 'ac') ) {
-            selectablechannels = data["2_4GHz_max11ch"].channels;
-        } else if (($.inArray(country_code, countries_2_4Ghz_max14ch) !== -1) && (hw_mode === 'b')) {
-            selectablechannels = data["2_4GHz_max14ch"].channels;
-        } else if (($.inArray(country_code, countries_5Ghz_max48ch) !== -1) && (hw_mode === 'ac')) {
-            selectablechannels = data["5Ghz_max48ch"].channels;
-        }
-
-        // Set channel select with available values
-        selected = (typeof selected === 'undefined') ? selectablechannels[0] : selected;
-        channel_select.empty();
-        $.each(selectablechannels, function(key,value) {
-            channel_select.append($("<option></option>").attr("value", value).text(value));
-        });
-        channel_select.val(selected);
+ // Retrieves the 'channel' value specified in hostapd.conf
+function getChannel() {
+    $.get('ajax/networking/get_channel.php',function(data){
+        jsonData = JSON.parse(data);
+        loadChannelSelect(jsonData);
     });
 }
 
-/* Sets hardware mode tooltip text for selected interface.
+/*
+ Sets the wirelss channel select options based on frequencies reported by iw.
+
+ See: https://git.kernel.org/pub/scm/linux/kernel/git/sforshee/wireless-regdb.git
+ Also: https://en.wikipedia.org/wiki/List_of_WLAN_channels
+*/
+function loadChannelSelect(selected) {
+    var iface = $('#cbxinterface').val();
+    var hwmodeText = '';
+    var csrfToken = $('meta[name=csrf_token]').attr('content');
+
+    // update hardware mode tooltip
+    setHardwareModeTooltip();
+
+    $.post('ajax/networking/get_frequencies.php',{'interface': iface, 'csrf_token': csrfToken, 'selected': selected},function(response){
+        var hw_mode = $('#cbxhwmode').val();
+        var country_code = $('#cbxcountries').val();
+        var channel_select = $('#cbxchannel');
+        var btn_save = $('#btnSaveHostapd');
+        var data = JSON.parse(response);
+        var selectableChannels = [];
+
+        // Map selected hw_mode to available channels
+        if (hw_mode === 'a') {
+            selectableChannels = data.filter(item => item.MHz.toString().startsWith('5'));
+        } else if (hw_mode !== 'ac') {
+            selectableChannels = data.filter(item => item.MHz.toString().startsWith('24'));
+        } else if (hw_mode === 'b') {
+            selectableChannels = data.filter(item => item.MHz.toString().startsWith('24'));
+        } else if (hw_mode === 'ac') {
+            selectableChannels = data.filter(item => item.MHz.toString().startsWith('5'));
+        }
+
+        // If selected channel doeesn't exist in allowed channels, set default or null (unsupported)
+        if (!selectableChannels.find(item => item.Channel === selected)) {
+            if (selectableChannels.length === 0) {
+                selectableChannels[0] = { Channel: null };
+            } else {
+                defaultChannel = selectableChannels[0].Channel;
+                selected = defaultChannel
+            }
+        }
+
+        // Set channel select with available values
+        channel_select.empty();
+        if (selectableChannels[0].Channel === null) {
+            channel_select.append($("<option></option>").attr("value", "").text("---"));
+            channel_select.prop("disabled", true);
+            btn_save.prop("disabled", true);
+        } else {
+            channel_select.prop("disabled", false);
+            btn_save.prop("disabled", false);
+            $.each(selectableChannels, function(key,value) {
+                channel_select.append($("<option></option>").attr("value", value.Channel).text(value.Channel));
+            });
+            channel_select.val(selected);
+        }
+    });
+}
+
+/* Sets hardware mode tooltip text for selected interface
+ * and calls loadChannelSelect()
  */
 function setHardwareModeTooltip() {
     var iface = $('#cbxinterface').val();
@@ -430,7 +578,7 @@ function setHardwareModeTooltip() {
     if ($('#cbxhwmode').find('option[value="ac"]').prop('disabled') == true ) {
         var hwmodeText = $('#hwmode').attr('data-tooltip');
     }
-    $.post('ajax/networking/get_frequencies.php?',{'interface': iface, 'csrf_token': csrfToken},function(data){
+    $.post('ajax/networking/get_nl80211_band.php?',{'interface': iface, 'csrf_token': csrfToken},function(data){
         var responseText = JSON.parse(data);
         $('#tiphwmode').attr('data-original-title', responseText + '\n' + hwmodeText );
     });
@@ -441,7 +589,8 @@ function setHardwareModeTooltip() {
  * Interface elements are updated to indicate current progress, status.
  */
 function updateBlocklist() {
-    var blocklist_id = $('#cbxblocklist').val();
+    var opt = $('#cbxblocklist option:selected');
+    var blocklist_id = opt.val();
     var csrfToken = $('meta[name=csrf_token]').attr('content');
     if (blocklist_id == '') { return; }
     $('#cbxblocklist-status').find('i').removeClass('fas fa-check').addClass('fas fa-cog fa-spin');
@@ -451,7 +600,7 @@ function updateBlocklist() {
         if (jsonData['return'] == '0') {
             $('#cbxblocklist-status').find('i').removeClass('fas fa-cog fa-spin').addClass('fas fa-check');
             $('#cbxblocklist-status').removeClass('check-progress').addClass('check-updated').delay(500).animate({ opacity: 1 }, 700);
-            $('#'+blocklist_id).text("Just now");
+            $('#blocklist-'+jsonData['list']).text("Just now");
         }
     })
 }
@@ -508,6 +657,77 @@ window.addEventListener('load', function() {
     });
 }, false);
 
+// DHCP or Static IP option group
+$('#chkstatic').on('change', function() {
+    if (this.checked) {
+        setStaticFieldsEnabled();
+    }
+});
+
+$('#chkdhcp').on('change', function() {
+    this.checked ? setStaticFieldsDisabled() : null;
+});
+
+
+$('input[name="dhcp-iface"]').change(function() {
+    if ($('input[name="dhcp-iface"]:checked').val() == '1') {
+        setDhcpFieldsEnabled();
+    } else {
+        setDhcpFieldsDisabled();
+    }
+});
+
+
+function setStaticFieldsEnabled() {
+    $('#txtipaddress').prop('required', true);
+    $('#txtsubnetmask').prop('required', true);
+    $('#txtgateway').prop('required', true);
+
+    $('#txtipaddress').removeAttr('disabled');
+    $('#txtsubnetmask').removeAttr('disabled');
+    $('#txtgateway').removeAttr('disabled');
+}
+
+function setStaticFieldsDisabled() {
+    $('#txtipaddress').prop('disabled', true);
+    $('#txtsubnetmask').prop('disabled', true);
+    $('#txtgateway').prop('disabled', true);
+
+    $('#txtipaddress').removeAttr('required');
+    $('#txtsubnetmask').removeAttr('required');
+    $('#txtgateway').removeAttr('required');
+}
+
+function setDhcpFieldsEnabled() {
+    $('#txtrangestart').prop('required', true);
+    $('#txtrangeend').prop('required', true);
+    $('#txtrangeleasetime').prop('required', true);
+    $('#cbxrangeleasetimeunits').prop('required', true);
+
+    $('#txtrangestart').removeAttr('disabled');
+    $('#txtrangeend').removeAttr('disabled');
+    $('#txtrangeleasetime').removeAttr('disabled');
+    $('#cbxrangeleasetimeunits').removeAttr('disabled');
+    $('#txtdns1').removeAttr('disabled');
+    $('#txtdns2').removeAttr('disabled');
+    $('#txtmetric').removeAttr('disabled');
+}
+
+function setDhcpFieldsDisabled() {
+    $('#txtrangestart').removeAttr('required');
+    $('#txtrangeend').removeAttr('required');
+    $('#txtrangeleasetime').removeAttr('required');
+    $('#cbxrangeleasetimeunits').removeAttr('required');
+
+    $('#txtrangestart').prop('disabled', true);
+    $('#txtrangeend').prop('disabled', true);
+    $('#txtrangeleasetime').prop('disabled', true);
+    $('#cbxrangeleasetimeunits').prop('disabled', true);
+    $('#txtdns1').prop('disabled', true);
+    $('#txtdns2').prop('disabled', true);
+    $('#txtmetric').prop('disabled', true);
+}
+
 // Static Array method
 Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + start);
 
@@ -533,8 +753,21 @@ $(document).on("click", ".js-toggle-password", function(e) {
 
 $(function() {
     $('#theme-select').change(function() {
-        var theme = themes[$( "#theme-select" ).val() ]; 
-        set_theme(theme);
+        var theme = themes[$( "#theme-select" ).val() ];
+
+        var hasDarkTheme = theme === 'custom.php' ||
+            theme === 'material-light.php';
+        var nightModeChecked = $("#night-mode").prop("checked");
+        
+        if (nightModeChecked && hasDarkTheme) {
+            if (theme === "custom.php") {
+                set_theme("lightsout.php");
+            } else if (theme === "material-light.php") {
+                set_theme("material-dark.php");
+            }
+        } else {
+            set_theme(theme);
+        }
    });
 });
 
@@ -547,7 +780,7 @@ function set_theme(theme) {
 $(function() {
     var currentTheme = getCookie('theme');
     // Check if the current theme is a dark theme
-    var isDarkTheme = currentTheme === 'lightsout.css' || currentTheme === 'material-dark.php';
+    var isDarkTheme = currentTheme === 'lightsout.php' || currentTheme === 'material-dark.php';
 
     $('#night-mode').prop('checked', isDarkTheme);
     $('#night-mode').change(function() {
@@ -556,12 +789,12 @@ $(function() {
         
         if (state == true) {
             if (currentTheme == 'custom.php') {
-                set_theme('lightsout.css');
+                set_theme('lightsout.php');
             } else if (currentTheme == 'material-light.php') {
                 set_theme('material-dark.php');
             }
         } else {
-            if (currentTheme == 'lightsout.css') {
+            if (currentTheme == 'lightsout.php') {
                 set_theme('custom.php');
             } else if (currentTheme == 'material-dark.php') {
                 set_theme('material-light.php');
@@ -587,7 +820,7 @@ function getCookie(cname) {
 var themes = {
     "default": "custom.php",
     "hackernews" : "hackernews.css",
-    "lightsout" : "lightsout.css",
+    "lightsout" : "lightsout.php",
     "material-light" : "material-light.php",
     "material-dark" : "material-dark.php",
 }

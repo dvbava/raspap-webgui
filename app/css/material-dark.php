@@ -16,43 +16,12 @@ License: GNU General Public License v3.0
 // Base color
 $baseColor = $color;
 
-// Function to darken a color by a percentage
-function darkenColor($color, $percent)
-{
-    $percent /= 100;
-    $r = hexdec(substr($color, 1, 2));
-    $g = hexdec(substr($color, 3, 2));
-    $b = hexdec(substr($color, 5, 2));
-
-    $r = round($r * (1 - $percent));
-    $g = round($g * (1 - $percent));
-    $b = round($b * (1 - $percent));
-
-    return sprintf("#%02x%02x%02x", $r, $g, $b);
-}
-
-// Function to lighten a color by a percentage
-function lightenColor($color, $percent)
-{
-    $percent /= 100;
-    $r = hexdec(substr($color, 1, 2));
-    $g = hexdec(substr($color, 3, 2));
-    $b = hexdec(substr($color, 5, 2));
-
-    $r = round($r + (255 - $r) * $percent);
-    $g = round($g + (255 - $g) * $percent);
-    $b = round($b + (255 - $b) * $percent);
-
-    return sprintf("#%02x%02x%02x", $r, $g, $b);
-}
-
 $textColor = lightenColor($baseColor, 95);
 // Create other color variables
 $cardsColor = darkenColor($baseColor, 60);
 $secondaryColor = lightenColor($baseColor, 30);
 $primaryColor = $baseColor;
 $backgroundColor = darkenColor($baseColor, 90);
-
 ?>
 
 @import url('all.css');
@@ -206,6 +175,7 @@ a:focus, a:hover {
 
 .modal-body {
   background-color: <?php echo $backgroundColor; ?>;
+  min-height: 8rem;
 }
 
 .card-header {
@@ -228,8 +198,6 @@ a:focus, a:hover {
   border-color: transparent;
   border-radius: 18px;
   background-color: <?php echo $cardsColor; ?>;
-  box-shadow: 0px -5px 5px rgba(0, 0, 0, 0.1),
-              0px 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .card-body {
@@ -288,11 +256,13 @@ hr {
   border-bottom-right-radius: 18px!important;
   border-bottom-left-radius: 18px!important;
   position: relative;
-  margin-top: -18px;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1),
+              0px 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .modal-footer {
-  border-radius: 18px;
+  margin-top: 0px;
+  height: 3.5rem;
 }
 
 .card>.card-header::before, .navbar-default::before {
@@ -548,6 +518,7 @@ input.btn.btn-success:hover {
   border-radius: 18px!important;
   background-color: <?php echo $backgroundColor; ?>;
   border: 1px solid <?php echo $primaryColor; ?>!important;
+  padding: 0.5rem;
 }
 
 .btn-sm {
@@ -625,3 +596,18 @@ a.scroll-to-top.rounded i.fas.fa-angle-up {
   padding: 5px;
   box-sizing: border-box;
 }
+
+.was-validated .form-control:valid,
+.was-validated .form-control:invalid {
+    background-position: center right calc(.375em + .4875rem);
+}
+
+.was-validated .form-control:invalid {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23dc3545' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.was-validated .form-control:valid {
+    background-size: calc(0.6em + 0.375rem) calc(0.6em + 0.375rem);
+}
+

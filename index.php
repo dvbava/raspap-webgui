@@ -7,14 +7,14 @@
  * Enables use of simple web interface rather than SSH to control WiFi and related services on the Raspberry Pi.
  * Recommended distribution is Raspberry Pi OS (64-bit) Lite. Specific instructions to install the supported software are
  * in the README and original post by @SirLagz. For a quick run through, the packages required for the WebGUI are:
- * lighttpd (version 1.4.59 installed via apt)
- * php-cgi (version 7.4.33 installed via apt)
- * along with their supporting packages, php7.4 will also need to be enabled.
+ * lighttpd (version 1.4.69 installed via apt)
+ * php-cgi (version 8.2.20 installed via apt)
+ * along with their supporting packages, php8.2 will also need to be enabled.
  *
  * @author  Lawrence Yau <sirlagz@gmail.com>
  * @author  Bill Zimmerman <billzimmerman@gmail.com>
  * @license GNU General Public License, version 3 (GPL-3.0)
- * @version 2.9.4
+ * @version 3.1.7
  * @link    https://github.com/RaspAP/raspap-webgui/
  * @link    https://raspap.com/
  * @see     http://sirlagz.net/2013/02/08/raspap-webgui/
@@ -26,6 +26,7 @@
 require 'includes/csrf.php';
 ensureCSRFSessionToken();
 
+require_once 'includes/exceptions.php';
 require_once 'includes/config.php';
 require_once 'includes/autoload.php';
 require_once 'includes/defaults.php';
@@ -45,6 +46,8 @@ require_once 'includes/data_usage.php';
 require_once 'includes/about.php';
 require_once 'includes/openvpn.php';
 require_once 'includes/wireguard.php';
+require_once 'includes/provider.php';
+require_once 'includes/restapi.php';
 require_once 'includes/torproxy.php';
 
 initializeApp();
@@ -146,6 +149,9 @@ initializeApp();
 
     <!-- SB-Admin-2 JavaScript -->
     <script src="dist/sb-admin-2/js/sb-admin-2.js"></script>
+
+    <!-- jQuery Mask plugin -->
+    <script src="dist/jquery-mask/jquery.mask.min.js"></script>
 
     <!-- Custom RaspAP JS -->
     <script src="app/js/custom.js"></script>

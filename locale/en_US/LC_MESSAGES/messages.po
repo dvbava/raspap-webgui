@@ -37,11 +37,11 @@ msgstr "WiFi client"
 msgid "Hotspot"
 msgstr "Hotspot"
 
-msgid "Memory Use"
-msgstr "Memory Use"
+msgid "Mem Use"
+msgstr "Mem Use"
 
-msgid "CPU Temp"
-msgstr "CPU Temp"
+msgid "CPU"
+msgstr "CPU"
 
 msgid "Networking"
 msgstr "Networking"
@@ -97,6 +97,18 @@ msgstr "New password"
 
 msgid "Repeat new password"
 msgstr "Repeat new password"
+
+msgid "Please provide a valid username."
+msgstr "Please provide a valid username."
+
+msgid "Please enter your old password."
+msgstr "Please enter your old password."
+
+msgid "Please enter a new password."
+msgstr "Please enter a new password."
+
+msgid "Please re-enter your new password."
+msgstr "Please re-enter your new password."
 
 #: includes/configure_client.php
 msgid "Client settings"
@@ -162,8 +174,8 @@ msgstr "<strong>Note:</strong> WEP access points appear as 'Open'. RaspAP does n
 msgid "No Wifi stations found"
 msgstr "No Wifi stations found"
 
-msgid "Reinitializing wpa_supplicant"
-msgstr "Reinitializing wpa_supplicant"
+msgid "Reinitialized wpa_supplicant. Choose <strong>Rescan</strong>."
+msgstr "Reinitialized wpa_supplicant. Choose <strong>Rescan</strong>."
 
 msgid "Click 'Rescan' to search for nearby Wifi stations."
 msgstr "Click 'Rescan' to search for nearby Wifi stations."
@@ -473,6 +485,42 @@ msgstr "Disable wpa_supplicant dhcp hook for this interface"
 msgid "If you manage wireless connections with wpa_supplicant itself, the hook may create unwanted connection events. This option disables the hook."
 msgstr "If you manage wireless connections with wpa_supplicant itself, the hook may create unwanted connection events. This option disables the hook."
 
+msgid "Please provide a valid IP Address."
+msgstr "Please provide a valid IP Address."
+
+msgid "Please provide a valid Default gateway."
+msgstr "Please provide a valid Default gateway."
+
+msgid "Please provide a valid Starting IP Address."
+msgstr "Please provide a valid Starting IP Address."
+
+msgid "Please provide a valid Ending IP Address."
+msgstr "Please provide a valid Ending IP Address."
+
+msgid "Please provide a valid Lease Time."
+msgstr "Please provide a valid Lease Time."
+
+msgid "Invalid interface name."
+msgstr "Invalid interface name."
+
+msgid "Invalid static IP address."
+msgstr "Invalid static IP address."
+
+msgid "Invalid default gateway."
+msgstr "Invalid default gateway."
+
+msgid "Invalid DHCP range end."
+msgstr "Invalid DHCP range end."
+
+msgid "Invalid DHCP lease time, not a number."
+msgstr "Invalid DHCP lease time, not a number."
+
+msgid "Unknown DHCP lease time unit."
+msgstr "Unknown DHCP lease time unit."
+
+msgid "Invalid metric value, not a number."
+msgstr "Invalid metric value, not a number."
+
 #: includes/hostapd.php
 msgid "Basic"
 msgstr "Basic"
@@ -530,6 +578,21 @@ msgstr "Unknown interface"
 
 msgid "Country code must be blank or two characters"
 msgstr "Country code must be blank or two characters"
+
+msgid "DHCP configuration for %s enabled."
+msgstr "DHCP configuration for %s enabled."
+
+msgid "DHCP configuration for %s added."
+msgstr "DHCP configuration for %s added."
+
+msgid "DHCP configuration for %s updated."
+msgstr "DHCP configuration for %s updated."
+
+msgid "Interface %s has no default settings."
+msgstr "Interface %s has no default settings."
+
+msgid "Configure settings in <strong>DHCP Server</strong> before starting AP."
+msgstr "Configure settings in <strong>DHCP Server</strong> before starting AP."
 
 msgid "Wifi Hotspot settings saved"
 msgstr "Wifi Hotspot settings saved"
@@ -709,6 +772,15 @@ msgstr "Routing table"
 msgid "raw output"
 msgstr "raw output"
 
+msgid "Setting wireless regulatory domain to %s"
+msgstr "Setting wireless regulatory domain to %s"
+
+msgid "Please provide a valid SSID."
+msgstr "Please provide a valid SSID."
+
+msgid "Please provide a valid PSK."
+msgstr "Please provide a valid PSK."
+
 #: includes/system.php
 msgid "System Information"
 msgstr "System Information"
@@ -751,6 +823,18 @@ msgstr "Reboot"
 
 msgid "Shutdown"
 msgstr "Shutdown"
+
+msgid "System reboot"
+msgstr "System reboot"
+
+msgid "System shutdown"
+msgstr "System shutdown"
+
+msgid "Reboot now? The system will be temporarily unavailable."
+msgstr "Reboot now? The system will be temporarily unavailable."
+
+msgid "Shutdown now? The system will be unavailable."
+msgstr "Shutdown now? The system will be unavailable."
 
 msgid "System Rebooting Now!"
 msgstr "System Rebooting Now!"
@@ -808,6 +892,30 @@ msgstr "Select a theme"
 
 msgid "Color"
 msgstr "Color"
+
+msgid "Tools"
+msgstr "Tools"
+
+msgid "System tools"
+msgstr "System tools"
+
+msgid "To generate a system <a href=\"%s\">debug log</a>, click or tap the button below."
+msgstr "To generate a system <a href=\"%s\">debug log</a>, click or tap the button below."
+
+msgid "Debug log information contains the RaspAP version, current state and configuration of AP related services, installed system packages, Linux kernel version and networking details. No passwords or other sensitive data are included."
+msgstr "Debug log information contains the RaspAP version, current state and configuration of AP related services, installed system packages, Linux kernel version and networking details. No passwords or other sensitive data are included."
+
+msgid "Generate debug log"
+msgstr "Generate debug log"
+
+msgid "Debug log generation in progress..."
+msgstr "Debug log generation in progress..."
+
+msgid "Diagnostic log size limit (KB)"
+msgstr "Diagnostic log size limit (KB)"
+
+msgid "Changing log limit size to %s KB"
+msgstr "Changing log limit size to %s KB"
 
 #: includes/data_usage.php
 msgid "Data usage"
@@ -1281,3 +1389,174 @@ msgstr "Enable Firewall"
 
 msgid "Apply changes"
 msgstr "Apply changes"
+
+#: includes/provider.php
+
+msgid "Account details"
+msgstr "Account details"
+
+msgid "My account"
+msgstr "My account"
+
+msgid "Server location"
+msgstr "Server location"
+
+msgid "Choosing <strong>Save settings</strong> will connect to the selected country."
+msgstr "Choosing <strong>Save settings</strong> will connect to the selected country."
+
+msgid "Choosing <strong>Connect %s</strong> will connect to a recommended server."
+msgstr "Choosing <strong>Connect %s</strong> will connect to a recommended server."
+
+msgid "Select a country from the server location list"
+msgstr "Select a country from the server location list"
+
+msgid "Select a country..."
+msgstr "Select a country..."
+
+msgid "Account information not available from %s's Linux CLI."
+msgstr "Account information not available from %s's Linux CLI."
+
+msgid "Attempting to connect to %s"
+msgstr "Attempting to connect to %s"
+
+msgid "Attempting to connect VPN provider"
+msgstr "Attempting to connect VPN provider"
+
+msgid "Attempting to disconnect VPN provider"
+msgstr "Attempting to disconnect VPN provider"
+
+msgid "Expected %s binary not found at: %s"
+msgstr "Expected %s binary not found at: %s"
+
+msgid "Visit the <a href=\"%s\" target=\"_blank\">installation instructions</a> for %s's Linux CLI."
+msgstr "Visit the <a href=\"%s\" target=\"_blank\">installation instructions</a> for %s's Linux CLI."
+
+msgid "Unable to execute %s binary found at: %s"
+msgstr "Unable to execute %s binary found at: %s"
+
+msgid "Check that binary is executable and permissions exist in raspap.sudoers"
+msgstr "Check that binary is executable and permissions exist in raspap.sudoers"
+
+msgid "Installed Linux CLI: <code>%s</code>"
+msgstr "Installed Linux CLI: <code>%s</code>"
+
+msgid "Current <code>%s</code> connection status is displayed below."
+msgstr "Current <code>%s</code> connection status is displayed below."
+
+msgid "Information provided by %s"
+msgstr "Information provided by %s"
+
+msgid "Connect %s"
+msgstr "Connect %s"
+
+msgid "Disconnect %s"
+msgstr "Disconnect %s"
+
+#: includes/about.php
+
+msgid "About"
+msgstr "About"
+
+msgid "Insiders"
+msgstr "Insiders"
+
+msgid "Contributing"
+msgstr "Contributing"
+
+msgid "Check for update"
+msgstr "Check for update"
+
+msgid "New release check in progress..."
+msgstr "New release check in progress..."
+
+msgid "A new release is available: Version"
+msgstr "A new release is available: Version"
+
+msgid "Installed version is the latest release."
+msgstr "Installed version is the latest release."
+
+msgid "GitHub authentication"
+msgstr "GitHub authentication"
+
+msgid "Updating Insiders requires GitHub authentication."
+msgstr "Updating Insiders requires GitHub authentication."
+
+msgid "Your credentials will be sent to GitHub securely with SSL. However, use caution if your RaspAP install is on a WLAN shared by untrusted users."
+msgstr "Your credentials will be sent to GitHub securely with SSL. However, use caution if your RaspAP install is on a WLAN shared by untrusted users."
+
+msgid "Personal Access Token"
+msgstr "Personal Access Token"
+
+msgid "Please provide a valid token."
+msgstr "Please provide a valid token."
+
+msgid "Perform update"
+msgstr "Perform update"
+
+msgid "Update in progress"
+msgstr "Update in progress"
+
+msgid "Application is being updated..."
+msgstr "Application is being updated..."
+
+msgid "Configuring update"
+msgstr "Configuring update"
+
+msgid "Updating sources"
+msgstr "Updating sources"
+
+msgid "Installing package updates"
+msgstr "Installing package updates"
+
+msgid "Downloading latest files"
+msgstr "Downloading latest files"
+
+msgid "Installing application"
+msgstr "Installing application"
+
+msgid "Update complete"
+msgstr "Update complete"
+
+msgid "An error occurred. Check the log at <code>/tmp/raspap_install.log</code>"
+msgstr "An error occurred. Check the log at <code>/tmp/raspap_install.log</code>"
+
+#: includes/exceptions.php
+
+msgid "RaspAP Exception"
+msgstr "RaspAP Exception"
+
+msgid "An exception occurred"
+msgstr "An exception occurred"
+
+#: includes/restapi.php
+
+msgid "RestAPI"
+msgstr "RestAPI"
+
+msgid "RestAPI settings"
+msgstr "RestAPI settings"
+
+msgid "Start RestAPI service"
+msgstr "Start RestAPI service"
+
+msgid "Stop RestAPI service"
+msgstr "Stop RestAPI service"
+
+msgid "API Key"
+msgstr "API Key"
+
+msgid "Saving API key"
+msgstr "Saving API key"
+
+msgid "RestAPI status"
+msgstr "RestAPI status"
+
+msgid "Current <code>restapi.service</code> status is displayed below."
+msgstr "Current <code>restapi.service</code> status is displayed below."
+
+msgid "RestAPI docs are accessible <a href=\"%s\" target=\"_blank\">here%s</a>"
+msgstr "RestAPI docs are accessible <a href=\"%s\" target=\"_blank\">here%s</a>"
+
+msgid "Restarting restapi.service"
+msgstr "Restarting restapi.service"
+

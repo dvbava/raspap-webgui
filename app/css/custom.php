@@ -3,7 +3,6 @@
 require_once '../../includes/functions.php';
 $color = getColorOpt();
 ?>
-
 /*
 Theme Name: RaspAP default
 Author: @billz
@@ -26,6 +25,10 @@ body {
   font-weight: 500;
 }
 
+.sidebar-brand-text {
+  color: <?php echo $color; ?>;
+}
+
 .card .card-header, .modal-header {
   border-color: <?php echo $color; ?>;
   color: #fff;
@@ -40,6 +43,12 @@ body {
   color: <?php echo $color; ?>;
   border-color: <?php echo $color; ?>;
   background-color: #fff;
+}
+
+.btn-primary:disabled {
+  color: <?php echo $color; ?> !important;
+  border-color: <?php echo $color; ?> !important;
+  background-color: #fff !important;
 }
 
 .card-footer, .modal-footer {

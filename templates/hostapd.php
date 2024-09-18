@@ -1,6 +1,6 @@
 <?php ob_start() ?>
   <?php if (!RASPI_MONITOR_ENABLED) : ?>
-    <input type="submit" class="btn btn-outline btn-primary" name="SaveHostAPDSettings" value="<?php echo _("Save settings"); ?>" />
+    <input type="submit" class="btn btn-outline btn-primary" id="btnSaveHostapd" name="SaveHostAPDSettings" value="<?php echo _("Save settings"); ?>" />
     <?php if ($hostapdstatus[0] == 0) : ?>
       <input type="submit" class="btn btn-success" name="StartHotspot" value="<?php echo  _("Start hotspot"); $msg=_("Starting hotspot"); ?>" data-toggle="modal" data-target="#hostapdModal"/>
     <?php else : ?>
@@ -12,7 +12,7 @@
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <div class="modal-title" id="ModalLabel"><i class="fas fa-sync-alt mr-2"></i><?php echo $msg ?></div>
+            <div class="modal-title" id="ModalLabel"><i class="fas fa-sync-alt fa-spin mr-2"></i><?php echo $msg ?></div>
           </div>
           <div class="modal-body">
             <div class="col-md-12 mb-3 mt-1"><?php echo _("Executing RaspAP service start") ?>...</div>
@@ -49,7 +49,7 @@
 
       <div class="card-body">
         <?php $status->showMessages(); ?>
-        <form role="form" action="hostapd_conf" method="POST">
+        <form role="form" action="hostapd_conf" method="POST" class="needs-validation" novalidate>
           <?php echo CSRFTokenFieldTag() ?>
 
           <!-- Nav tabs -->
