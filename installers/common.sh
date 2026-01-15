@@ -34,7 +34,16 @@ if [ "$insiders" == 1 ]; then
     repo="RaspAP/raspap-insiders"
     branch=${RASPAP_INSIDERS_LATEST}
 fi
-git_source_url="https://github.com/$repo"
+
+#Use ssh IF $ssh is set AND $username and $acctoken IS NOT set
+if [ -n "$username" ] && [ -n "$acctoken" ]; then
+    git_source_url="https://${username}:${acctoken}@github.com/$repo"
+    ssh=0
+elif [ "$ssh" == 1 ]; then 
+    git_source_url="git@github.com:$repo"
+else 
+    git_source_url="https://github.com/$repo"
+fi
 webroot_dir="/var/www/html"
 
 # NOTE: all the below functions are overloadable for system-specific installs
@@ -51,6 +60,8 @@ function _install_raspap() {
     _download_latest_files
     _change_file_ownership
     _create_hostapd_scripts
+    _install_raspap_hostapd
+    _create_plugin_scripts
     _create_lighttpd_scripts
     _install_lighttpd_configs
     _default_configuration
@@ -74,6 +85,8 @@ function _update_raspap() {
     _download_latest_files
     _change_file_ownership
     _patch_system_files
+    _enable_network_activity_monitor
+    _create_plugin_scripts
     _install_complete
 }
 
@@ -145,21 +158,24 @@ function _get_linux_distro() {
 # Sets php package option based on Linux version, abort if unsupported distro
 function _set_php_package() {
     case $RELEASE in
+        13|2025.*) # Debian 13 trixie, Kali Linux 2025
+            php_package="php8.4-fpm"
+            phpiniconf="/etc/php/8.4/fpm/php.ini" ;;
         23.05|12*) # Debian 12 & Armbian 23.05
             php_package="php8.2-cgi"
-            phpcgiconf="/etc/php/8.2/cgi/php.ini" ;;
+            phpiniconf="/etc/php/8.2/cgi/php.ini" ;;
         23.04) # Ubuntu Server 23.04
             php_package="php8.1-cgi"
-            phpcgiconf="/etc/php/8.1/cgi/php.ini" ;;
+            phpiniconf="/etc/php/8.1/cgi/php.ini" ;;
         22.04|20.04|18.04|19.10|11*) # Previous Ubuntu Server, Debian & Armbian distros
             php_package="php7.4-cgi"
-            phpcgiconf="/etc/php/7.4/cgi/php.ini" ;;
+            phpiniconf="/etc/php/7.4/cgi/php.ini" ;;
         10*|11*)
             php_package="php7.3-cgi"
-            phpcgiconf="/etc/php/7.3/cgi/php.ini" ;;
+            phpiniconf="/etc/php/7.3/cgi/php.ini" ;;
         9*)
             php_package="php7.0-cgi"
-            phpcgiconf="/etc/php/7.0/cgi/php.ini" ;;
+            phpiniconf="/etc/php/7.0/cgi/php.ini" ;;
         8)
             _install_status 1 "${DESC} and php5 are not supported. Please upgrade."
             exit 1 ;;
@@ -230,7 +246,7 @@ function _install_dependencies() {
     else
         echo "${php_package} will be installed from the main deb sources list"
     fi
-    if [ ${OS,,} = "debian" ] || [ ${OS,,} = "ubuntu" ]; then
+    if [ ${OS,,} = "debian" ] || [ ${OS,,} = "ubuntu" ] || [ ${OS,,} = "kali" ]; then
         dhcpcd_package="dhcpcd5"
         iw_package="iw"
         rsync_package="rsync"
@@ -243,7 +259,22 @@ function _install_dependencies() {
     if [ ${OS,,} = "armbian" ]; then
         ifconfig_package="net-tools"
         echo "${ifconfig_package} will be installed from the main deb sources list"
+
+        # Manually install isoquery
+        _install_log "Installing isoquery from the Debian package repository"
+        isoquery_deb="https://ftp.debian.org/debian/pool/main/i/isoquery"
+        if [ "$LONG_BIT" = "64" ]; then
+            isoquery_pkg="isoquery_3.3.4-1+b1_arm64.deb"
+        else
+            isoquery_pkg="isoquery_3.3.4-1_armhf.deb"
+        fi
+        echo "isoquery ARM ${LONG_BIT}-bit package selected"
+        wget $isoquery_deb/$isoquery_pkg -q --show-progress --progress=bar:force -P /tmp || _install_status 1 "Failed to download isoquery"
+        sudo dpkg -x /tmp/$isoquery_pkg /tmp/isoquery/ || _install_status 1 "Failed to extract isoquery"
+        sudo cp /tmp/isoquery/usr/bin/isoquery /usr/local/bin/ || _install_status 1 "Failed to copy isoquery binary"
+        sudo chmod +x /usr/local/bin/isoquery || _install_status 1 "Failed to set executable permissions on isoquery"
     fi
+
     if [ "$insiders" == 1 ]; then
         network_tools="curl dnsutils nmap"
         echo "${network_tools} will be installed from the main deb sources list"
@@ -253,6 +284,13 @@ function _install_dependencies() {
     echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
     echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
     sudo apt-get install -y lighttpd git hostapd dnsmasq iptables-persistent $php_package $dhcpcd_package $iw_package $rsync_package $network_tools $ifconfig_package vnstat qrencode jq isoquery || _install_status 1 "Unable to install dependencies"
+
+    if [[ "$php_package" == *"-fpm" ]]; then
+        _install_log "Enabling lighttpd fastcgi-php-fpm module for $php_package"
+        sudo lighty-enable-mod fastcgi-php-fpm || \
+            _install_status 1 "Unable to enable fastcgi-php-fpm module"
+        sudo systemctl restart $php_package.service || _install_status 1 "Unable to restart $php_package.service"
+    fi
     _install_status 0
 }
 
@@ -287,14 +325,24 @@ function _create_hostapd_scripts() {
     _install_log "Creating hostapd logging & control scripts"
     sudo mkdir $raspap_dir/hostapd || _install_status 1 "Unable to create directory '$raspap_dir/hostapd'"
 
-    # Copy logging shell scripts
-    sudo cp "$webroot_dir/installers/"enablelog.sh "$raspap_dir/hostapd" || _install_status 1 "Unable to move logging scripts"
-    sudo cp "$webroot_dir/installers/"disablelog.sh "$raspap_dir/hostapd" || _install_status 1 "Unable to move logging scripts"
     # Copy service control shell scripts
     sudo cp "$webroot_dir/installers/"servicestart.sh "$raspap_dir/hostapd" || _install_status 1 "Unable to move service control scripts"
     # Change ownership and permissions of hostapd control scripts
     sudo chown -c root:root "$raspap_dir/hostapd/"*.sh || _install_status 1 "Unable change owner and/or group"
     sudo chmod 750 "$raspap_dir/hostapd/"*.sh || _install_status 1 "Unable to change file permissions"
+    _install_status 0
+}
+
+# Generate plugin helper scripts
+function _create_plugin_scripts() {
+    _install_log "Creating plugin helper scripts"
+    sudo mkdir -p $raspap_dir/plugins || _install_status 1 "Unable to create directory '$raspap_dir/plugins'"
+
+    # Copy plugin helper script
+    sudo cp "$webroot_dir/installers/"plugin_helper.sh "$raspap_dir/plugins" || _install_status 1 "Unable to move plugin script"
+    # Change ownership and permissions of plugin script
+    sudo chown -c root:root "$raspap_dir/plugins/"*.sh || _install_status 1 "Unable change owner and/or group"
+    sudo chmod 750 "$raspap_dir/plugins/"*.sh || _install_status 1 "Unable to change file permissions"
     _install_status 0
 }
 
@@ -376,7 +424,28 @@ function _prompt_install_feature() {
         else
             $function
         fi
+    elif [ "$opt" == "pv_option" ]; then
+        local opt_value=${!opt:-0}
+        if [ "$opt_value" == 0 ]; then
+            echo "(Skipped)"
+        else
+            local valid_ids=($(jq -r '.providers[].id' "$webroot_dir/config/vpn-providers.json"))
+            local found=0
+            for id in "${valid_ids[@]}"; do
+                if [ "$id" == "$opt_value" ]; then
+                    found=1
+                    break
+                fi
+            done
+            if [ $found == 1 ]; then
+                echo -e
+                $function
+            else
+                _install_status 1 "Invalid VPN provider ID $opt_value - (Skipped)"
+            fi
+        fi
     elif [ "${!opt}" == 1 ]; then
+        echo -e
         $function
     else
         echo "(Skipped)"
@@ -457,6 +526,7 @@ function _install_provider() {
 
             if [ "$answer" != "${answer#[0]}" ]; then
                 _install_status 0 "(Skipped)"
+                skip=true
                 break
             elif [[ "$answer" =~ ^[0-9]+$ ]] && [[ -n ${options[$answer]+abc} ]]; then
                 break
@@ -465,25 +535,25 @@ function _install_provider() {
             fi
         done
     fi
+    if ! [ "$skip" ]; then
+        selected="${options[$answer]}"
+        echo "Configuring support for ${selected%%|*}"
+        bin_path=${selected#*|}
+        if ! grep -q "$bin_path" "$webroot_dir/installers/raspap.sudoers"; then
+            echo "Adding $bin_path to raspap.sudoers"
+            echo "www-data ALL=(ALL) NOPASSWD:$bin_path *" | sudo tee -a "$webroot_dir/installers/raspap.sudoers" > /dev/null || _install_status 1 "Unable to modify raspap.sudoers"
+        fi
+        echo "Enabling administration option for ${selected%%|*}"
+        sudo sed -i "s/\('RASPI_VPN_PROVIDER_ENABLED', \)false/\1true/g" "$webroot_dir/includes/config.php" || _install_status 1 "Unable to modify config.php"
 
-    selected="${options[$answer]}"
-    echo "Configuring support for ${selected%%|*}"
-    bin_path=${selected#*|}
-    if ! grep -q "$bin_path" "$webroot_dir/installers/raspap.sudoers"; then
-        echo "Adding $bin_path to raspap.sudoers"
-        echo "www-data ALL=(ALL) NOPASSWD:$bin_path *" | sudo tee -a "$webroot_dir/installers/raspap.sudoers" > /dev/null || _install_status 1 "Unable to modify raspap.sudoers"
-    fi
-    echo "Enabling administration option for ${selected%%|*}"
-    sudo sed -i "s/\('RASPI_VPN_PROVIDER_ENABLED', \)false/\1true/g" "$webroot_dir/includes/config.php" || _install_status 1 "Unable to modify config.php"
-
-    echo "Adding VPN provider to $raspap_dir/provider.ini"
-    if [ ! -f "$raspap_dir/provider.ini" ]; then
-        sudo touch "$raspap_dir/provider.ini"
-        echo "providerID = $answer" | sudo tee "$raspap_dir/provider.ini" > /dev/null || _install_status 1 "Unable to create $raspap_dir/provider.ini"
-    elif ! grep -q "providerID = $answer" "$raspap_dir/provider.ini"; then
-        echo "providerID = $answer" | sudo tee "$raspap_dir/provider.ini" > /dev/null || _install_status 1 "Unable to write to $raspap_dir/provider.ini"
-    fi
-
+        echo "Adding VPN provider to $raspap_dir/provider.ini"
+        if [ ! -f "$raspap_dir/provider.ini" ]; then
+            sudo touch "$raspap_dir/provider.ini"
+            echo "providerID = $answer" | sudo tee "$raspap_dir/provider.ini" > /dev/null || _install_status 1 "Unable to create $raspap_dir/provider.ini"
+        elif ! grep -q "providerID = $answer" "$raspap_dir/provider.ini"; then
+            echo "providerID = $answer" | sudo tee "$raspap_dir/provider.ini" > /dev/null || _install_status 1 "Unable to write to $raspap_dir/provider.ini"
+        fi
+    fi    
     _install_status 0
 }
 
@@ -496,6 +566,13 @@ function _install_wireguard() {
     fi
     echo "Installing wireguard from apt"
     sudo apt-get install -y wireguard $wg_dep || _install_status 1 "Unable to install wireguard"
+
+    # create shim for resolvconf under debian 13
+    if { ! command -v resolvconf >/dev/null || [ "$RELEASE" == 13 ]; } then
+        echo "Applying resolvconf shim to prevent DNS conflicts"
+        sudo ln -sf /usr/bin/true /usr/local/bin/resolvconf || _install_status 1 "Failed to apply resolvconf shim"
+    fi
+
     echo "Enabling wg-quick@wg0"
     sudo systemctl enable wg-quick@wg0 || _install_status 1 "Failed to enable wg-quick service"
     echo "Enabling WireGuard management option"
@@ -564,20 +641,16 @@ function _download_latest_files() {
     source_dir="/tmp/raspap-webgui"
     if [ -d "$source_dir" ]; then
         echo "Temporary download destination $source_dir exists. Removing..."
-        rm -r "$source_dir"
+        rm -rf "$source_dir"
     fi
-    if [ "$repo" == "RaspAP/raspap-insiders" ]; then
-        if [ -n "$username" ] && [ -n "$acctoken" ]; then
-            insiders_source_url="https://${username}:${acctoken}@github.com/$repo"
-            git clone --branch $branch --depth 1 -c advice.detachedHead=false $insiders_source_url $source_dir || clone=false
-        else
-            _install_status 3
-            echo "Insiders please read this: https://docs.raspap.com/insiders/#authentication"
-        fi
+    if [ "$insiders" == 1 ] && [ "$ssh" != 1 ] && [[ -z "$username"  ||  -z "$acctoken" ]]; then
+        _install_status 3
+        _install_status 0 "Insiders please read this: https://docs.raspap.com/insiders/#authentication"
     fi
-    if [ -z "$insiders_source_url" ]; then
-        git clone --branch $branch --depth 1 -c advice.detachedHead=false $git_source_url $source_dir || clone=false
-    fi
+
+    git clone --branch $branch --depth 1 --recurse-submodules -c advice.detachedHead=false $git_source_url $source_dir || clone=false
+    git -C $source_dir submodule update --remote plugins || clone=false
+
     if [ "$clone" = false ]; then
         _install_status 1 "Unable to download files from GitHub"
         echo "The installer cannot continue." >&2
@@ -587,18 +660,36 @@ function _download_latest_files() {
     if [ -d "$webroot_dir" ] && [ "$update" == 0 ]; then
         sudo mv $webroot_dir "$webroot_dir.`date +%F-%R`" || _install_status 1 "Unable to move existing webroot directory"
     elif [ "$upgrade" == 1 ] || [ "$update" == 1 ]; then
-        exclude='--exclude=ajax/system/sys_read_logfile.php'
-        shopt -s extglob
-        sudo find "$webroot_dir" ! -path "${webroot_dir}/ajax/system/sys_read_logfile.php" -delete 2>/dev/null
+        # Preserve user plugins temporarily
+        if [ -d "$webroot_dir/plugins" ]; then
+            sudo cp -r "$webroot_dir/plugins" "/tmp/raspap-user-plugins"
+        fi
+
+        sudo find "$webroot_dir" -mindepth 1 \
+          ! -path "${webroot_dir}/ajax/system/sys_read_logfile.php" \
+          ! -path "${webroot_dir}/plugins" \
+          ! -path "${webroot_dir}/plugins/*" \
+          -delete 2>/dev/null
+
+        # Remove plugins to permit clean rsync
+        sudo rm -rf "$webroot_dir/plugins"
     fi
 
     _install_log "Installing application to $webroot_dir"
     sudo rsync -av $exclude "$source_dir"/ "$webroot_dir"/ >/dev/null 2>&1 || _install_status 1 "Unable to install files to $webroot_dir"
 
+    # Restore user plugins after rsync
+    if [ "$upgrade" == 1 ] || [ "$update" == 1 ]; then
+        if [ -d "/tmp/raspap-user-plugins" ]; then
+            sudo find /tmp/raspap-user-plugins -mindepth 1 -maxdepth 1 -type d -exec cp -r {} "$webroot_dir/plugins/" \; 2>/dev/null
+            sudo rm -rf "/tmp/raspap-user-plugins"
+        fi
+    fi
+
     if [ "$update" == 1 ]; then
         _install_log "Applying existing configuration to ${webroot_dir}/includes"
         sudo mv /tmp/config.php $webroot_dir/includes  || _install_status 1 "Unable to move config.php to ${webroot_dir}/includes"
-        
+
         if [ -f /tmp/raspap.auth ]; then
             _install_log "Applying existing authentication file to ${raspap_dir}"
             sudo mv /tmp/raspap.auth $raspap_dir || _install_status 1 "Unable to restore authentification credentials file to ${raspap_dir}"
@@ -744,6 +835,14 @@ function _enable_raspap_daemon() {
     sudo systemctl enable raspapd.service || _install_status 1 "Failed to enable raspap.service"
 }
 
+# Install hostapd@.service
+function _install_raspap_hostapd() {
+    _install_log "Installing RaspAP hostapd@.service"
+    sudo cp $webroot_dir/installers/hostapd@.service /etc/systemd/system/ || _install_status 1 "Unable to copy hostapd@.service file"
+    sudo systemctl daemon-reload
+    _install_status 0
+}
+
 # Configure IP forwarding, set IP tables rules, prompt to install RaspAP daemon
 function _configure_networking() {
     _install_log "Configuring networking"
@@ -758,8 +857,8 @@ function _configure_networking() {
     "-A POSTROUTING -s 192.168.50.0/24 ! -d 192.168.50.0/24 -j MASQUERADE"
     )
     for rule in "${rules[@]}"; do
-        if grep -- "$rule" $rulesv4 > /dev/null; then
-            echo "Rule already exits: ${rule}"
+        if sudo grep -- "$rule" $rulesv4 > /dev/null; then
+            echo "Rule already exists: ${rule}"
         else
             rule=$(sed -e 's/^\(-A POSTROUTING\)/-t nat \1/' <<< $rule)
             echo "Adding rule: ${rule}"
@@ -786,8 +885,37 @@ function _configure_networking() {
         echo -e
         _enable_raspap_daemon
     fi
+
+    # Enable RaspAP network activity monitor
+    _enable_network_activity_monitor
+
     _install_status 0
  }
+
+# Install and enable RaspAP network activity monitor
+function _enable_network_activity_monitor() {
+    _install_log "Enabling RaspAP network activity monitor"
+    echo "Compiling raspap-network-monitor.c to /usr/local/bin/"
+    if ! command -v gcc >/dev/null 2>&1; then
+        echo "gcc not found, installing..."
+        sudo apt-get update
+        sudo apt-get install -y build-essential || _install_status 1 "Failed to install build tools"
+    fi
+    sudo gcc -O2 -o /usr/local/bin/raspap-network-monitor $webroot_dir/installers/raspap-network-monitor.c || _install_status 1 "Failed to compile raspap-network-monitor.c"
+    echo "Copying raspap-network-activity@.service to /lib/systemd/system/"
+    sudo cp $webroot_dir/installers/raspap-network-activity@.service /lib/systemd/system/ || _install_status 1 "Unable to move raspap-network-activity.service file"
+    sudo systemctl daemon-reload
+    echo "Enabling raspap-network-activity@wlan0.service"
+    sudo systemctl enable raspap-network-activity@wlan0.service || _install_status 1 "Failed to enable raspap-network-activity.service"
+    echo "Starting raspap-network-activity@wlan0.service"
+    sudo systemctl start raspap-network-activity@wlan0.service || _install_status 1 "Failed to start raspap-network-activity.service"
+    sleep 0.5
+    echo "Symlinking /dev/shm/net_activity to $webroot_dir/app/net_activity"
+    sudo ln -sf /dev/shm/net_activity $webroot_dir/app/net_activity || _install_status 1 "Failed to link net_activity to ${webroot_dir}/app"
+    echo "Setting ownership for ${raspap_user} on ${webroot_dir}/app/net_activity"
+    sudo chown -R $raspap_user:$raspap_user $webroot_dir/app/net_activity || _install_status 1 "Unable to set ownership of ${webroot_dir}/app/net_activity"
+    echo "Network activity monitor enabled"
+}
 
 # Prompt to configure TCP BBR option
 function _prompt_configure_tcp_bbr() {
@@ -842,7 +970,7 @@ function _configure_tcp_bbr() {
 }
 
 function _check_tcp_bbr_available() {
-    if [[ "$(modinfo -F intree tcp_bbr)" == "y" ]]; then
+    if [[ "$(modinfo -F intree tcp_bbr)" =~ ^[Yy]$ ]]; then
         return 0
     else
         return 1
@@ -885,14 +1013,14 @@ function _patch_system_files() {
 function _optimize_php() {
     if [ "$upgrade" == 0 ]; then
         _install_log "Optimize PHP configuration"
-        if [ ! -f "$phpcgiconf" ]; then
+        if [ ! -f "$phpiniconf" ]; then
             _install_status 2 "PHP configuration could not be found."
             return
         fi
 
         # Backup php.ini and create symlink for restoring.
         datetimephpconf=$(date +%F-%R)
-        sudo cp "$phpcgiconf" "$raspap_dir/backups/php.ini.$datetimephpconf"
+        sudo cp "$phpiniconf" "$raspap_dir/backups/php.ini.$datetimephpconf"
         sudo ln -sf "$raspap_dir/backups/php.ini.$datetimephpconf" "$raspap_dir/backups/php.ini"
 
         echo -n "Enable HttpOnly for session cookies (Recommended)? [Y/n]: "
@@ -907,7 +1035,7 @@ function _optimize_php() {
 
         if [ "$assume_yes" == 1 ] || [ "$php_session_cookie" == 1 ]; then
             echo "Php-cgi enabling session.cookie_httponly."
-            sudo sed -i -E 's/^session\.cookie_httponly\s*=\s*(0|([O|o]ff)|([F|f]alse)|([N|n]o))\s*$/session.cookie_httponly = 1/' "$phpcgiconf"
+            sudo sed -i -E 's/^session\.cookie_httponly\s*=\s*(0|([O|o]ff)|([F|f]alse)|([N|n]o))\s*$/session.cookie_httponly = 1/' "$phpiniconf"
         fi
 
         if [ "$php_package" = "php7.1-cgi" ]; then
@@ -923,7 +1051,7 @@ function _optimize_php() {
 
             if [ "$assume_yes" == 1 ] || [ "$phpopcache" == 1 ]; then
                 echo -e "Php-cgi enabling opcache.enable."
-                sudo sed -i -E 's/^;?opcache\.enable\s*=\s*(0|([O|o]ff)|([F|f]alse)|([N|n]o))\s*$/opcache.enable = 1/' "$phpcgiconf"
+                sudo sed -i -E 's/^;?opcache\.enable\s*=\s*(0|([O|o]ff)|([F|f]alse)|([N|n]o))\s*$/opcache.enable = 1/' "$phpiniconf"
                 # Make sure opcache extension is turned on.
                 if [ -f "/usr/sbin/phpenmod" ]; then
                     sudo phpenmod opcache
